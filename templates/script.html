@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DATA KAMERA</title>
+    <style>
+        body {
+            background: url('static/images/bg/blog.jpg');
+            color: #fff;
+            letter-spacing: 1.5px;
+            display: flex;
+            justify-content: center;
+            height: auto;
+            margin: 0;
+        }
+
+        #video-container {
+            display: inline-block;
+            margin-left: 40px;
+            margin-top: 20px;
+            border: 5px solid #fff;
+            /* White border around video */
+            box-shadow: 0px 0px 28px 5px rgba(255, 255, 255, 0.5);
+            /* Shadow effect */
+            border-radius: 10px;
+            /* Rounded corners */
+            overflow: hidden;
+            /* Ensure video does not overflow border-radius */
+        }
+
+        img {
+            display: block;
+            width: 550px;
+            height: auto;
+        }
+
+        h3 {
+            margin-top: 20px;
+            text-align: end;
+            margin-right: -40%;
+        }
+
+        .table {
+            width: 100%;
+            height: auto;
+            margin-top: 60px;
+            padding: 20px 50px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            font-size: 15px;
+            background-color: #454545;
+        }
+
+        tbody,
+        th,
+        td {
+            border: 1px solid #fff;
+            padding: 10px;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        tbody {
+            font-size: 15px;
+            background-color: #303030;
+        }
+
+        tbody tr:hover {
+            background-color: #505050;
+            /* Background color on hover */
+            cursor: pointer;
+            /* Change cursor to pointer */
+        }
+
+        .pagination {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            background-color: #454545;
+            border: none;
+            color: #fff;
+            padding: 10px 20px;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+
+        .pagination button.disabled {
+            background-color: #303030;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        <h3>HASIL PENDATAAN DI LDTE</h3>
+        <div id="video-container">
+            <img src="{{ url_for('video_feed') }}" alt="Video Feed">
+        </div>
+    </div>
+
+    <div class="table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>NIM</th>
+                    <th>Gender</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody id="records-table">
+                <!-- Records from database -->
+            </tbody>
+        </table>
+        <div class="pagination">
+            <button id="prev-btn" class="disabled">Previous</button>
+            <button id="next-btn">Next</button>
+        </div>
+    </div>
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script>
+    var currentPage = 1;
+    var recordsPerPage = 10; // Adjust this value as needed
+    var refreshInterval = 5000; // 5 seconds interval for auto-refresh
+
+    function fetchRecords(page) {
+        $.ajax({
+            url: '/get_records',
+            method: 'GET',
+            data: { page: page, limit: recordsPerPage },
+            success: function (data) {
+                console.log("Received data:", data);  // Debug print
+                var recordsTable = $('#records-table');
+                recordsTable.empty();  // Clear existing data
+                if (Array.isArray(data.records)) {
+                    data.records.forEach(function (record) {
+                        var row = '<tr>' +
+                            '<td>' + (record[0] || 'N/A') + '</td>' +
+                            '<td>' + (record[1] || 'N/A') + '</td>' +
+                            '<td>' + (record[2] || 'N/A') + '</td>' +
+                            '<td>' + (record[3] || 'N/A') + '</td>' +
+                            '</tr>';
+                        recordsTable.append(row);
+                    });
+                } else {
+                    console.log("Unexpected data format:", data);  // Debug print
+                }
+
+                // Update pagination buttons
+                $('#prev-btn').toggleClass('disabled', page === 1);
+                $('#next-btn').toggleClass('disabled', !data.hasMoreRecords);
+            },
+            error: function (xhr, status, error) {
+                console.log("AJAX error:", status, error);  // Debug print
+            }
+        });
+    }
+
+    function startAutoRefresh() {
+        setInterval(function () {
+            fetchRecords(currentPage);
+        }, refreshInterval);
+    }
+
+    $(document).ready(function () {
+        fetchRecords(currentPage); // Initial fetch
+        startAutoRefresh(); // Start auto-refresh
+
+        $('#prev-btn').click(function () {
+            if (currentPage > 1) {
+                currentPage--;
+                fetchRecords(currentPage);
+            }
+        });
+
+        $('#next-btn').click(function () {
+            if ($('#next-btn').hasClass('disabled')) {
+                return; // Do nothing if the next button is disabled
+            }
+            currentPage++;
+            fetchRecords(currentPage);
+        });
+    });
+</script>
+
+</html>
